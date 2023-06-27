@@ -195,7 +195,7 @@
 	<button id = "button11" class = "buttons">Infant Mortality Rate</button><br>
 
 </div>
-<script src="https://storage.googleapis.com/jsonhost/cors-config.json"></script>
+<script src="https://storage.googleapis.com/jsonhost/ALL.json"></script>
 <script>
 	/*
 		Country = Location
@@ -261,7 +261,7 @@
 				}
 				var clicked = String(e.target.feature.properties.Location);
 				console.log(clicked);
-				$.getJSON("https://storage.googleapis.com/jsonhost/cors-config.json", function(data){
+				$.getJSON("https://storage.googleapis.com/jsonhost/ALL.json", function(data){
 					var dataarray = [];
 					for (var i in data){
 						dataarray.push(i, data[i]);
@@ -367,7 +367,7 @@
 		selectedField = field;
 		selectedName = name;
 		currenttime = time;
-		$.getJSON("https://storage.googleapis.com/jsonhost/cors-config.json", function (data){
+		$.getJSON("https://storage.googleapis.com/jsonhost/ALL.json", function (data){
 			var filtered = L.geoJSON(data,{
 				filter: myfilter,
 				onEachFeature: onEachFeature,
