@@ -243,97 +243,109 @@
 	var selectedName  = "Total Population";
 	updateMap(selectedField, selectedName, currenttime);
 
-	function onEachFeature(feature, layer){
+	function onEachFeature(feature, layer) {
 		layer.on({
-			click: function(e){
-				var popupcontent = '<canvas id = "chart"></canvas>';
-				var popup = L.popup({
-					maxWidth: 600,
-					minWidth: 500,
-					maxHeight: 500,
-					minHeight: 400
-				}).setContent(popupcontent);
-				layer.bindPopup(popup);
-				var valarray = [];
-				var timearray = [];
-				for (var i = 1950; i <= 2050; i++){
-					timearray.push(i);
-				}
-				var clicked = String(e.target.feature.properties.Location);
-				console.log(clicked);
-				$.getJSON("https://storage.googleapis.com/jsonhost/ALL.json", function(data){
-					var dataarray = [];
-					for (var i in data){
-						dataarray.push(i, data[i]);
-						console.log(i);
-					}
-					var lastarray = [];
-					valarray.push(dataarray[3]);
-					for (var i = 0; i < valarray[0].length; i++){
-						if (valarray[0][i]['properties']['Location'] == clicked){
-							lastarray.push(valarray[0][i]['properties'][selectedField]);
-						}
-						if (lastarray.length == 101){
-							break;
-						}
-					}
-					console.log(lastarray);
-
-					layer.on('popupopen', function(){
-						var canvas = document.getElementById('chart');
-						var ctx = canvas.getContext('2d');
-
-						var chart = new Chart(ctx, {
-							type: 'line',
-							data:{
-								labels: timearray,
-								datasets: [
-									{
-										data: lastarray,
-										label: clicked + "'s " + selectedName,
-										borderColor: 'blue',
-										fill: false,
-										tension: .1,
-										pointRadius: 0
-									}
-								]
-							},
-							options: {
-								scales:{
-									y: {
-										title: {
-											display: true,
-											text: selectedName,
-										}
-									},
-									x: {
-										title: {
-											display: true,
-											text: "Year"
-										}
-									}
-								},
-								title:{
-									display: true,
-									text: "Test"
-								}
-							}
-						});
-					})
-				});
-
-			},
-			mouseover: highlightFeature,
-			mouseout: function () {
-				layer.setStyle({
-					color: "black",
-					weight: 1,
-					dashArray: '1',	
-				});
-				info.update();
-			}
+		  click: function(e) {
+			var popupcontent = '<div id="chart-container"><div id="loading-indicator">Loading...</div><canvas id="chart"></canvas></div>';
+			var popup = L.popup({
+			  maxWidth: 600,
+			  minWidth: 500,
+			  maxHeight: 500,
+			  minHeight: 400
+			}).setContent(popupcontent);
+			layer.bindPopup(popup).openPopup();
+		  },
+		  mouseover: highlightFeature,
+		  mouseout: function() {
+			layer.setStyle({
+			  color: "black",
+			  weight: 1,
+			  dashArray: '1',
+			});
+			info.update();
+		  }
 		});
-	}
+	  
+		layer.on('popupopen', function() {
+		  var valarray = [];
+		  var timearray = [];
+		  for (var i = 1950; i <= 2050; i++) {
+			timearray.push(i);
+		  }
+		  var clicked = String(feature.properties.Location);
+		  console.log(clicked);
+	  
+		  $.getJSON("https://storage.googleapis.com/jsonhost/ALL.json", function(data) {
+			console.log("Data loaded");
+			var dataarray = [];
+			for (var i in data) {
+			  dataarray.push(i, data[i]);
+			  console.log(i);
+			}
+			var lastarray = [];
+			valarray.push(dataarray[3]);
+			for (var i = 0; i < valarray[0].length; i++) {
+			  if (valarray[0][i]['properties']['Location'] == clicked) {
+				lastarray.push(valarray[0][i]['properties'][selectedField]);
+			  }
+			  if (lastarray.length == 101) {
+				break;
+			  }
+			}
+			console.log(lastarray);
+
+	  
+			console.log("Loading chart");
+			var chartContainer = document.getElementById('chart-container');
+      		var loadingIndicator = document.getElementById('loading-indicator');
+      		var chartCanvas = document.getElementById('chart');
+      		chartCanvas.style.display = 'none';
+
+			var canvas = document.getElementById('chart');
+			var ctx = canvas.getContext('2d');
+			var chart = new Chart(ctx, {
+			  type: 'line',
+			  data: {
+				labels: timearray,
+				datasets: [{
+				  data: lastarray,
+				  label: clicked + "'s " + selectedName,
+				  borderColor: 'blue',
+				  fill: false,
+				  tension: .1,
+				  pointRadius: 0
+				}]
+			  },
+			  options: {
+				scales: {
+				  y: {
+					title: {
+					  display: true,
+					  text: selectedName,
+					}
+				  },
+				  x: {
+					title: {
+					  display: true,
+					  text: "Year"
+					}
+				  }
+				},
+				title: {
+				  display: true,
+				  text: "Test"
+				}
+			  }
+			});
+			chart.update();
+
+			chartCanvas.style.display = 'block';
+			loadingIndicator.style.display = 'none';
+			popup.setContent(chartCanvas);
+		  });
+		});
+	  }
+	  
 
 	var legend = L.control({position: 'bottomright'});
 	function createLegend(breaks, colors){
