@@ -367,7 +367,7 @@
 		selectedField = field;
 		selectedName = name;
 		currenttime = time;
-		$.getJSON("https://github.com/dylannewsom/dylannewsom.github.io/blob/main/ALL.json", function (data){
+		$.getJSON("https://storage.cloud.google.com/jsonhost/ALL.json", function (data){
 			var filtered = L.geoJSON(data,{
 				filter: myfilter,
 				onEachFeature: onEachFeature,
