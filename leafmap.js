@@ -1,0 +1,444 @@
+/*
+		Country = Location
+		Death Rate = Death_Rate
+		Infant Mortality Rate = IMR
+		Life Expectancy = Life_Expec
+		Median age of population = Median_Pop
+		Population Change = Population
+		Population Density = Populati_1
+		Rate of population change = Rate_of_po
+		Sex ratio of total population = Sex_Ratio
+		Total deaths = Total_Deat
+		Total Fertility Rate = TFR
+		Total Population = Populati_2
+		Time = Time
+*/
+
+const map = L.map('map', {
+	zoom: 2,
+	center: [30,0],
+	minZoom: 2,
+	maxZoom: 12
+});
+var northWest = L.latLng(90, -360),
+	southEast = L.latLng(-90, 360),
+	bounds = L.latLngBounds(northWest, southEast);
+map.setMaxBounds(bounds);
+const tiles = L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
+	attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+	className: 'map-tiles'
+}).addTo(map);
+const info = L.control();
+info.onAdd = function(map){
+	this._div = L.DomUtil.create('div', 'info');
+	this.update();
+	return this._div;
+};
+var currenttime = "2023-01-01T00:00:00Z";
+var selectedField = "Populati_2";
+var selectedName  = "Total Population";
+updateMap(selectedField, selectedName, currenttime);
+function onEachFeature(feature, layer) {
+	layer.on({
+	  click: function(e) {
+		var popupcontent = '<div id="chart-container"><div id="loading-indicator">Loading...</div><canvas id="chart"></canvas></div>';
+		var popup = L.popup({
+		  maxWidth: 600,
+		  minWidth: 500,
+		  maxHeight: 500,
+		  minHeight: 400
+		}).setContent(popupcontent);
+		layer.bindPopup(popup).openPopup();
+	  },
+	  mouseover: highlightFeature,
+	  mouseout: function() {
+		layer.setStyle({
+		  color: "black",
+		  weight: 1,
+		  dashArray: '1',
+		});
+		info.update();
+	  }
+	});
+  
+	layer.on('popupopen', function() {
+	  var valarray = [];
+	  var timearray = [];
+	  for (var i = 1950; i <= 2050; i++) {
+		timearray.push(i);
+	  }
+	  var clicked = String(feature.properties.Location);
+	  console.log(clicked);
+  
+	  $.getJSON("https://storage.googleapis.com/jsonhost/ALL.json", function(data) {
+		console.log("Data loaded");
+		var dataarray = [];
+		for (var i in data) {
+		  dataarray.push(i, data[i]);
+		  console.log(i);
+		}
+		var lastarray = [];
+		valarray.push(dataarray[3]);
+		for (var i = 0; i < valarray[0].length; i++) {
+		  if (valarray[0][i]['properties']['Location'] == clicked) {
+			lastarray.push(valarray[0][i]['properties'][selectedField]);
+		  }
+		  if (lastarray.length == 101) {
+			break;
+		  }
+		}
+		console.log(lastarray);
+  
+		console.log("Loading chart");
+		var chartContainer = document.getElementById('chart-container');
+  		var loadingIndicator = document.getElementById('loading-indicator');
+  		var chartCanvas = document.getElementById('chart');
+  		chartCanvas.style.display = 'none';
+		var canvas = document.getElementById('chart');
+		var ctx = canvas.getContext('2d');
+		var chart = new Chart(ctx, {
+		  type: 'line',
+		  data: {
+			labels: timearray,
+			datasets: [{
+			  data: lastarray,
+			  label: clicked + "'s " + selectedName,
+			  borderColor: 'blue',
+			  fill: false,
+			  tension: .1,
+			  pointRadius: 0
+			}]
+		  },
+		  options: {
+			scales: {
+			  y: {
+				title: {
+				  display: true,
+				  text: selectedName,
+				}
+			  },
+			  x: {
+				title: {
+				  display: true,
+				  text: "Year"
+				}
+			  }
+			},
+			title: {
+			  display: true,
+			  text: "Test"
+			}
+		  }
+		});
+		chart.update();
+		chartCanvas.style.display = 'block';
+		loadingIndicator.style.display = 'none';
+		popup.setContent(chartCanvas);
+	  });
+	});
+  }
+  
+var legend = L.control({position: 'bottomright'});
+function createLegend(breaks, colors){
+	if (map.LegendControl){
+		map.removeControl(map.LegendControl);
+	}
+	legend.onAdd = function(map){
+		var div = L.DomUtil.create('div', 'legend');
+		for (var i = breaks.length-1; i >= 1; i--){
+			div.innerHTML += '<div><i style = "background:' + colors[i] + '"></i> <b>' + breaks[i] + ' to ' + breaks[i-1] + '</b><br>';
+		}
+		if (selectedName == "Population Change"){
+			div.innerHTML += '<div><i style = "background:' + colors[0] + '"></i> <b>' + breaks[0] + ' to -8,618,685'+ '</b><br>';
+		}
+		else if (selectedName == "Rate of Population Change"){
+			div.innerHTML += '<div><i style = "background:' + colors[0] + '"></i> <b>' + breaks[0] + ' to -18.6 '+ '</b><br>';
+		}
+		else{
+			div.innerHTML += '<div><i style = "background:' + colors[0] + '"></i> <b>' + breaks[0] + ' to 0 '+ '</b><br>';
+		}
+		return div;
+	}
+	console.log('create legend');
+	legend.addTo(map);
+}
+var BREAKS = [39923245, 164063412, 510992617, 1078970907, 1670490596]
+createLegend(BREAKS.map(number => number.toLocaleString()), ['#F0F9E8','#BAE4BC','#7BCCC4','#43A2CA','#0868AC']);
+function updateMap(field, name, time){
+	selectedField = field;
+	selectedName = name;
+	currenttime = time;
+	$.getJSON("https://storage.googleapis.com/jsonhost/ALL.json", function (data){
+		var filtered = L.geoJSON(data,{
+			filter: myfilter,
+			onEachFeature: onEachFeature,
+			style: style
+		})
+		filtered.addTo(map);
+		info.update(data.properties);
+	})
+}
+function myfilter (feature){
+	if (feature.properties.Time == currenttime){
+		return true;
+	}
+	else{
+		false;
+	}
+}
+var slider = document.getElementById('mySlider');
+var output = document.getElementById('sliderValue');
+var timer = null;
+output.innerHTML = slider.value;
+slider.addEventListener('input', function(event){
+	clearTimeout(timer);
+	map.dragging.disable();
+	timer = setTimeout(function(){
+		var time = String(event.target.value);
+		time += "-01-01T00:00:00Z";
+		console.log(time);
+		updateMap(selectedField, selectedName, time);
+	}, 500);
+	map.dragging.enable();
+})
+slider.addEventListener('input', function(event){
+	output.innerHTML = event.target.value;
+})	
+info.update = function (props){
+	var newtime = currenttime.substring(0,4);
+	if (selectedName == "Total Population"){
+		const contents = props ? `<b>${props.Location} - ${newtime}</b><br />${props[selectedField].toLocaleString()} People` : 'Hover over a country';
+		this._div.innerHTML = `<h4>${selectedName}</h4>${contents}`;
+	}
+	else if (selectedName == "Median Age of Population"){
+		const contents = props ? `<b>${props.Location} - ${newtime}</b><br />${props[selectedField].toFixed(2)} Years` : 'Hover over a country';
+		this._div.innerHTML = `<h4>${selectedName}</h4>${contents}`;
+	}
+	else if (selectedName == "Population Change"){
+		const contents = props ? `<b>${props.Location} - ${newtime}</b><br />${props[selectedField].toLocaleString()} People / yr` : 'Hover over a country';
+		this._div.innerHTML = `<h4>${selectedName}</h4>${contents}`;
+	}
+	else if (selectedName == "Rate of Population Change"){
+		const contents = props ? `<b>${props.Location} - ${newtime}</b><br />${props[selectedField].toFixed(2)}% / yr` : 'Hover over a country';
+		this._div.innerHTML = `<h4>${selectedName}</h4>${contents}`;
+	}
+	else if (selectedName == "Population Density"){
+		const contents = props ? `<b>${props.Location} - ${newtime}</b><br />${props[selectedField].toFixed(2)} People / sq. km` : 'Hover over a country';
+		this._div.innerHTML = `<h4>${selectedName}</h4>${contents}`;
+	}
+	else if (selectedName == "Sex Ratio of the Population"){
+		const contents = props ? `<b>${props.Location} - ${newtime}</b><br />${props[selectedField].toFixed(2)} Male/Female Ratio` : 'Hover over a country';
+		this._div.innerHTML = `<h4>${selectedName}</h4>${contents}`;
+	}
+	else if (selectedName == "Total Fertility Rate"){
+		const contents = props ? `<b>${props.Location} - ${newtime}</b><br />${props[selectedField].toLocaleString()} Children per Woman` : 'Hover over a country';
+		this._div.innerHTML = `<h4>${selectedName}</h4>${contents}`;
+	}
+	else if (selectedName == "Life Expectancy at Birth"){
+		const contents = props ? `<b>${props.Location} - ${newtime}</b><br />${props[selectedField].toLocaleString()} Years` : 'Hover over a country';
+		this._div.innerHTML = `<h4>${selectedName}</h4>${contents}`;
+	}
+	else if (selectedName == "Total Deaths"){
+		const contents = props ? `<b>${props.Location} - ${newtime}</b><br />${props[selectedField].toLocaleString()} People / yr` : 'Hover over a country';
+		this._div.innerHTML = `<h4>${selectedName}</h4>${contents}`;
+	}
+	else if (selectedName == "Crude Death Rate"){
+		const contents = props ? `<b>${props.Location} - ${newtime}</b><br />${props[selectedField].toLocaleString()} / 1000 People` : 'Hover over a country';
+		this._div.innerHTML = `<h4>${selectedName}</h4>${contents}`;
+	}
+	else if (selectedName == "Infant Mortality Rate"){
+		const contents = props ? `<b>${props.Location} - ${newtime}</b><br />${props[selectedField].toLocaleString()} / 1000 People` : 'Hover over a country';
+		this._div.innerHTML = `<h4>${selectedName}</h4>${contents}`;
+	}
+}
+info.addTo(map);
+document.getElementById("button1").addEventListener("click", function() {
+	updateMap("Populati_2", "Total Population", currenttime);
+	var BREAKS = [39923245, 164063412, 510992617, 1078970907, 1670490596]
+	createLegend(BREAKS.map(number => number.toLocaleString()), ['#F0F9E8','#BAE4BC','#7BCCC4','#43A2CA','#0868AC']);
+});
+document.getElementById("button2").addEventListener("click", function() {
+	updateMap("Median_Pop", "Median Age of Population", currenttime);
+	var BREAKS = [22, 30, 40, 45, 56.68]
+	createLegend(BREAKS.map(number => number.toLocaleString()), ['#FEF0D9','#FDCC8A','#FC8D59','#E34A33','#B30000']);
+});
+document.getElementById("button3").addEventListener("click", function() {
+	updateMap("Population", "Population Change", currenttime);
+	var BREAKS = [0, 7000, 63000, 280000, 22289974]
+	createLegend(BREAKS.map(number => number.toLocaleString()), ['#b2182b','#f7f7f7','#d1e5f0','#67a9cf','#2166ac']);
+});
+document.getElementById("button4").addEventListener("click", function() {
+	updateMap("Rate_of_po", "Rate of Population Change", currenttime);
+	var BREAKS = [0, 1.00, 1.75, 2.50, 36.299]
+	createLegend(BREAKS.map(number => number.toFixed(2)), ['#fee08b','#ffffbf','#d9ef8b','#91cf60','#1a9850']);
+});
+document.getElementById("button5").addEventListener("click", function() {
+	updateMap("Populati_1", "Population Density", currenttime);
+	var BREAKS = [17.986935, 51.263107, 100.034168, 225.804202, 25278.18792]
+	createLegend(BREAKS.map(number => number.toFixed(2)), ['#edf8fb','#b3cde3','#8c96c6','#8856a7','#810f7c']);
+});
+document.getElementById("button6").addEventListener("click", function() {
+	updateMap("Sex_Ratio", "Sex Ratio of the Population", currenttime);
+	var BREAKS = [94.357655, 97.556323, 100, 102.484845, 327.456193]
+	createLegend(BREAKS.map(number => number.toFixed(2)), ['#E600A9','#FF73DF','#9EAAD7','#73B2FF','#0070FF']);
+});
+document.getElementById("button7").addEventListener("click", function() {
+	updateMap("TFR", "Total Fertility Rate", currenttime);
+	var BREAKS = [1.696023, 2.286274, 3.39118, 5.743395, 8.863675]
+	createLegend(BREAKS.map(number => number.toFixed(2)), ['#af8dc3','#e7d4e8','#d9f0d3','#7fbf7b','#1b7837']);
+});
+document.getElementById("button8").addEventListener("click", function() {
+	updateMap("Life_Expec", "Life Expectancy at Birth", currenttime);
+	var BREAKS = [57.2786, 66.7681, 72.3845, 80, 90.1865]
+	createLegend(BREAKS.map(number => number.toFixed(2)), ['#A63603','#E6550D','#FD8D3C','#FDBE85','#FEEDDE']);
+});
+document.getElementById("button9").addEventListener("click", function() {
+	updateMap("Total_Deat", "Total Deaths", currenttime);
+	var BREAKS = [231977, 803693, 1854612, 4113154, 19613435]
+	createLegend(BREAKS.map(number => number.toLocaleString()), ['#FFFFB2','#FECC5C','#FD8D3C','#F03B20','#BD0026']);
+});
+document.getElementById("button10").addEventListener("click", function() {
+	updateMap("Death_Rate", "Crude Death Rate", currenttime);
+	var BREAKS = [6.543, 8.274, 10.193, 13.524, 103.534]
+	createLegend(BREAKS.map(number => number.toFixed(2)), ['#FEEBE2','#FBB4B9','#F768A1','#C51B8A','#7A0177']);
+});
+document.getElementById("button11").addEventListener("click", function() {
+	updateMap("IMR", "Infant Mortality Rate", currenttime);
+	var BREAKS = [6.65706, 15.7782, 34.67227, 79.15877, 400.64341]
+	createLegend(BREAKS.map(number => number.toFixed(2)), ['#F5F500','#F5B800','#F57A00','#F53D00','#F50000']);
+});
+function getColor(feature, f, time){
+	//DONE
+	if (selectedName == "Total Population"){
+		var BREAKS = [39923245, 164063412, 510992617, 1078970907, 1670490596]
+		return ((f < BREAKS[0])) ? '#F0F9E8' :
+			   ((f < BREAKS[1])) ? '#BAE4BC' :
+			   ((f < BREAKS[2])) ? '#7BCCC4' :
+			   ((f < BREAKS[3])) ? '#43A2CA' :
+			   ((f < BREAKS[4])) ? '#0868AC' :
+			   			'white'; 
+	}
+	//DONE
+	else if (selectedName == "Median Age of Population"){
+		var BREAKS = [22, 30, 40, 45, 56.68]
+		return ((f < BREAKS[0])) ? '#FEF0D9' :
+			   ((f < BREAKS[1])) ? '#FDCC8A' :
+			   ((f < BREAKS[2])) ? '#FC8D59' :
+			   ((f < BREAKS[3])) ? '#E34A33' :
+			   ((f < BREAKS[4])) ? '#B30000' :
+			   			'white'; 
+	}
+	//Done
+	else if (selectedName == "Population Change"){
+		var BREAKS = [0, 7000, 63000, 280000, 22289974]
+		return ((f < BREAKS[0])) ? '#b2182b' :
+			   ((f < BREAKS[1])) ? '#f7f7f7' :
+			   ((f < BREAKS[2])) ? '#d1e5f0' :
+			   ((f < BREAKS[3])) ? '#67a9cf' :
+			   ((f < BREAKS[4])) ? '#2166ac' :
+			   			'white'; 
+	}
+	//Done
+	else if (selectedName == "Rate of Population Change"){
+		var BREAKS = [0, 1.00, 1.75, 2.50, 36.299]
+		return ((f < BREAKS[0])) ? '#fee08b' :
+			   ((f < BREAKS[1])) ? '#ffffbf' :
+			   ((f < BREAKS[2])) ? '#d9ef8b' :
+			   ((f < BREAKS[3])) ? '#91cf60' :
+			   ((f < BREAKS[4])) ? '#1a9850' :
+			   			'white'; 
+	}
+	//Done
+	else if (selectedName == "Population Density"){
+		var BREAKS = [17.986935, 51.263107, 100.034168, 225.804202, 25278.18792]
+		return ((f < BREAKS[0])) ? '#edf8fb' :
+			   ((f < BREAKS[1])) ? '#b3cde3' :
+			   ((f < BREAKS[2])) ? '#8c96c6' :
+			   ((f < BREAKS[3])) ? '#8856a7' :
+			   ((f < BREAKS[4])) ? '#810f7c' :
+			   			'white'; 
+	}
+	//Done
+	else if (selectedName == "Sex Ratio of the Population"){
+		var BREAKS = [94.357655, 97.556323, 100, 102.484845, 327.456193]
+		return ((f < BREAKS[0])) ? '#E600A9' :
+			   ((f < BREAKS[1])) ? '#FF73DF' :
+			   ((f < BREAKS[2])) ? '#9EAAD7' :
+			   ((f < BREAKS[3])) ? '#73B2FF' :
+			   ((f < BREAKS[4])) ? '#0070FF' :
+			   			'white'; 
+	}
+	//Done
+	if (selectedName == "Total Fertility Rate"){
+		var BREAKS = [1.696023, 2.286274, 3.39118, 5.743395, 8.863675]
+		return ((f < BREAKS[0])) ? '#af8dc3' :
+			   ((f < BREAKS[1])) ? '#e7d4e8' :
+			   ((f < BREAKS[2])) ? '#d9f0d3' :
+			   ((f < BREAKS[3])) ? '#7fbf7b' :
+			   ((f < BREAKS[4])) ? '#1b7837' :
+			   			'white'; 
+	}
+	//Done
+	else if (selectedName == "Life Expectancy at Birth"){
+		var BREAKS = [57.2786, 66.7681, 72.3845, 80, 90.1865]
+		return ((f < BREAKS[0])) ? '#A63603' :
+			   ((f < BREAKS[1])) ? '#E6550D' :
+			   ((f < BREAKS[2])) ? '#FD8D3C' :
+			   ((f < BREAKS[3])) ? '#FDBE85' :
+			   ((f < BREAKS[4])) ? '#FEEDDE' :
+			   			'white'; 
+	}
+	//Done
+	else if (selectedName == "Total Deaths"){
+		var BREAKS = [231977, 803693, 1854612, 4113154, 19613435]
+		return ((f < BREAKS[0])) ? '#FFFFB2' :
+			   ((f < BREAKS[1])) ? '#FECC5C' :
+			   ((f < BREAKS[2])) ? '#FD8D3C' :
+			   ((f < BREAKS[3])) ? '#F03B20' :
+			   ((f < BREAKS[4])) ? '#BD0026' :
+			   			'white'; 
+	}
+	//Done
+	else if (selectedName == "Crude Death Rate"){
+		var BREAKS = [6.543, 8.274, 10.193, 13.524, 103.534]
+		return ((f < BREAKS[0])) ? '#FEEBE2' :
+			   ((f < BREAKS[1])) ? '#FBB4B9' :
+			   ((f < BREAKS[2])) ? '#F768A1' :
+			   ((f < BREAKS[3])) ? '#C51B8A' :
+			   ((f < BREAKS[4])) ? '#7A0177' :
+			   			'white'; 
+	}
+	//Done
+	else if (selectedName == "Infant Mortality Rate"){
+		var BREAKS = [6.65706, 15.7782, 34.67227, 79.15877, 400.64341]
+		return ((f < BREAKS[0])) ? '#F5F500' :
+			   ((f < BREAKS[1])) ? '#F5B800' :
+			   ((f < BREAKS[2])) ? '#F57A00' :
+			   ((f < BREAKS[3])) ? '#F53D00' :
+			   ((f < BREAKS[4])) ? '#F50000' :
+			   			'white'; 
+	}
+	
+}
+function style(feature, layer){
+	return {
+		weight: 1,
+		opacity: 1,
+		color: 'black',
+		dashArray: '1',
+		fillOpacity: 1,
+		fillColor: getColor(feature, feature.properties[selectedField], feature.properties.Time)
+	};
+}
+function highlightFeature(e){
+	const layer = e.target;
+	layer.setStyle({
+		weight: 5,
+		opacity: 1,
+		color: 'black',
+		dashArray: '',
+		fillOpacity: 1
+	});
+	layer.bringToFront();
+	info.update(layer.feature.properties);
+}
