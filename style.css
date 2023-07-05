@@ -135,20 +135,25 @@ body {
   background-color: #303841;
   text-align: center;
   padding: 40px;
+  z-index: 0;
+  position: relative;
+
 }
 .resume{
+  margin-top: 6vh;
   padding: 1vw;
-  padding-top: 0;
   background-color: #3a4750;
   color: #d3d6db;
   text-align: left;
   margin-left: 1vw;
+  border-style: solid;
+  border-color: #d3d6db;
+  box-shadow: 0 5px 8px rgba(0, 0, 0, 0.2);
+  border-width: .2vw;
 }
 .resumetitle{
   font-size: 5vw;
-  margin-top: 5vw;
   text-align: left;
-  padding-top: 5vh;
 }
 .section{
   text-align: left;
@@ -179,15 +184,15 @@ body {
     border-style: solid;
     border-width: 1vw;
     border-color:#be3144;
-    z-index: 10;
+    z-index: 100;
 }
 #map{
-    align-items: stretch;
+    align-items: absolute;
     position: relative;
     height: 100%;
     width: 80%;
     float: right;
-    z-index: 10;
+    z-index: 1;
 }		
 #sidepanel {
     height: 100%;

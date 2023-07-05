@@ -4,9 +4,19 @@
     <base target="_top">
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel = "stylesheet" type = "text/css" href = "style.css"/>
 
     <title>Academic Work</title>
-    <link rel = "stylesheet" type = "text/css" href = "style.css"/>
+
+    <meta http-equiv="Permissions-Policy" content="interest-cohort=()">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" integrity="sha256-kLaT2GOSpHechhsozzB+flnD+zUyjE2LlfWPgU04xyI=" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js" integrity="sha256-WBkoXOwTeyKclOHuWtc+i2uENFpDZ9YPdf5Hf+D7ewM=" crossorigin=""></script>
+	<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+	<link rel="stylesheet" href="https://code.jquery.com/ui/1.13.1/themes/smoothness/jquery-ui.css">
+	<script src="https://code.jquery.com/ui/1.13.1/jquery-ui.min.js"></script>
+	<script src = "https://cdn.jsdelivr.net/npm/chart.js@4.0.1/dist/chart.umd.min.js"></script>
+	<link rel = "stylesheet" type = "text/css" href = "style.css"/>
+
 </head>
 <body>
     <div class="topbar">
@@ -15,5 +25,37 @@
 		<a href = "academic.html"><button class = "topbuttons">Academic Work</button></a>
 		<a href = "personal.html"><button class = "topbuttons">Personal Projects (WIP)</button></a>
 	</div>
+
+    <div class = "content">
+        <h1>Placeholder</h1>
+        <div id = "wholemap">
+
+            <div id="map">
+                <div id = "slider">
+                    <input type="range" id="mySlider" min="1950" max="2050" value = "2023" step="1" class = "slider">
+                    <p id = "sliderval">Year: <span id = "sliderValue"></span></p>
+                </div>
+            </div>
+            <div id = "sidepanel">
+                <p id = "paneltop">Click buttons to change displayed data.</p>
+                <button id = "button1" class = "buttons">Total Population</button><br>
+                <button id = "button2" class = "buttons">Median age of Population</button><br>
+                <button id = "button3" class = "buttons">Population Change</button><br>
+                <button id = "button4" class = "buttons">Rate of Population Change</button><br>
+                <button id = "button5" class = "buttons">Population Density</button><br>
+                <button id = "button6" class = "buttons">Sex Ratio of the Total Population</button><br>
+                <button id = "button7" class = "buttons">Total Fertility Rate</button><br>
+                <button id = "button8" class = "buttons">Life Expectancy at Birth</button><br>
+                <button id = "button9" class = "buttons">Total Deaths</button><br>
+                <button id = "button10" class = "buttons">Crude Death Rate</button><br>
+                <button id = "button11" class = "buttons">Infant Mortality Rate</button><br>
+        
+            </div>
+            <script src="https://storage.googleapis.com/jsonhost/ALL.json"></script>
+            <script src = "leafmap.js">
+            </script>
+        
+        </div>
+    </div>
 </body>
 </html>
