@@ -335,6 +335,7 @@ input[type="range"] {
   margin: 2vw;
   text-align: left;
   position: relative;
+  text-indent: 0;
   max-height: 20vw;
   overflow: auto;
   border: 1px solid #ccc;
@@ -361,6 +362,7 @@ input[type="range"] {
   font-size: 3vw;
   color: #d3d6db;
   cursor: pointer;
+  margin-bottom: 2vw;
 }
 .codebutton:hover{
   background: #d3d6db;
@@ -370,4 +372,15 @@ input[type="range"] {
 .codebutton:active{
   transform: scale(0.98);
   box-shadow: 3px 2px 22px 1px rgba(0, 0, 0, 0.24);
+}
+.code-box2 {
+  text-indent: 0;
+  margin: 2vw;
+  text-align: left;
+  position: relative;
+  max-height: 20vw;
+  overflow: auto;
+  border: 1px solid #ccc;
+  padding: 10px;
+  color: #d3d6db;
 }

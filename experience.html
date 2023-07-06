@@ -542,19 +542,209 @@
         </div>
         
         <div class = "experience">
+            <iframe src="https://docs.google.com/presentation/d/e/2PACX-1vSFD76MmH0qa-zanXvMlNLsvzfSk1T8dHoN0VQamsQSKkZKaz3NQRSDDrw_nod1Pw/embed?start=true&loop=false&delayms=10000" 
+            frameborder="0" width="80%" height="800" allowfullscreen="true" mozallowfullscreen="true" webkitallowfullscreen="true"></iframe>
+            
             <h2 class = "sectionhead">GIS Practicum: Water and Human Resources Sustainability Analysis</h2>
             <p id = "intro">TODO</p>
         </div>
 
         <div class = "experience">
+            <iframe src="https://drive.google.com/file/d/1-krWhC1ir-PLuGhBJjYWV3Jh706utaNp/preview" width="80%" height="600" allow="autoplay" allowfullscreen></iframe>
+            <div class = "code-box2">
+                <pre><code id = "code-snippet2">import arcpy
+                        import pandas as pd
+                        import numpy as np
+                        arcpy.env.overwriteOutput = True
+                        
+                        class Toolbox(object):
+                            def __init__(self):
+                                self.label = "Toolbox"
+                                self.alias = ""
+                        
+                                # List of tool classes associated with this toolbox
+                                self.tools = [AirQuality]
+                        
+                        
+                        class AirQuality(object):
+                            def __init__(self):
+                                self.label = "Air Quality"
+                                self.description = "Get the average air quality index per county"
+                                self.canRunInBackground = False
+                        
+                            def getParameterInfo(self):
+                                # param0 asks the user for the input air quality csv file #
+                                param0 = arcpy.Parameter(
+                                    displayName="Input File",
+                                    name="input_file",
+                                    datatype="DEFile",
+                                    parameterType="Required",
+                                    direction="Input"
+                                )
+                                # param1 asks the user to define an output project 
+                                # where the result will be exported to #
+                                param1 = arcpy.Parameter(
+                                    displayName="Output Project",
+                                    name="output_project",
+                                    datatype="DEFile",
+                                    parameterType="Required",
+                                    direction="Output"
+                                )
+                                # param2 asks the user for a compatible county 
+                                # shapefile to use with the air quality data #
+                                param2 = arcpy.Parameter(
+                                    displayName = 'County Shapefile',
+                                    name = 'shapefile',
+                                    datatype = 'GPFeatureLayer',
+                                    parameterType = 'Required',
+                                    direction = 'Input'
+                                )
+                                # param3 asks the user to define the geodatabase/workspace #
+                                param3 = arcpy.Parameter(
+                                    displayName = 'Geodatabase',
+                                    name = 'geodatabase',
+                                    datatype = 'DEWorkspace',
+                                    parameterType = 'Required',
+                                    direction = 'input'
+                                )
+                                params = [param0, param1, param2, param3]
+                                return params
+                        
+                            def isLicensed(self):
+                                """Set whether tool is licensed to execute."""
+                                return True
+                        
+                            def updateParameters(self, parameters):
+                                """Modify the values and properties of parameters before internal
+                                validation is performed.  This method is called whenever a parameter
+                                has been changed."""
+                                return
+                        
+                            def updateMessages(self, parameters):
+                                """Modify the messages created by internal validation for each tool
+                                parameter.  This method is called after internal validation."""
+                                return
+                        
+                            def execute(self, parameters, messages):
+                                """The source code of the tool."""
+                                input_file = parameters[0].valueAsText
+                                output_project = parameters[1].valueAsText
+                                shapefile = parameters[2].valueAsText
+                                geodatabase = parameters[3].valueAsText
+                                
+                                data = pd.read_csv(input_file)
+                                df = pd.DataFrame(data)
+                                # Creates two variables that hold the average AQI values by county code and the county code values by county and prints
+                                mean = df.groupby('COUNTY_CODE').mean()
+                                aqi = mean['DAILY_AQI_VALUE']
+                                code = df.groupby('COUNTY').mean()
+                                cc = code['COUNTY_CODE']
+                                cc = [int(x) for x in cc]
+                                cc = [str(x) for x in cc]
+                                for x in cc:
+                                    if len(x) == 2:
+                                        x = x.zfill(3)
+                                    else:
+                                        x = x
+                        
+                        
+                                # Creates two numpy arrays that hold the AQI and County Code values that can be accessed by the index
+                                length = 0
+                                data = np.array([])
+                                for x in aqi:
+                                    data = np.append(data, x)
+                                    length += 1
+                                rnge = range(length)
+                                ser = pd.Series(data, index=rnge)
+                                data2 = np.array([])
+                                for x in cc:
+                                    data2 = np.append(data2, x)
+                                ser2 = pd.Series(data2, index=rnge)
+                        
+                        
+                                row = []
+                        
+                                # Defines the local workspace of the ArcGIS geodatabase with the county shapefile
+                                arcpy.env.workspace = geodatabase
+                                outpath = arcpy.env.workspace
+                        
+                                # Creates a table in the geodatabase using the local workspace, and creates two fields for the new table
+                                arcpy.CreateTable_management(outpath, "testTable")
+                                arcpy.AddField_management("testTable", "COUNTYFP", "TEXT")
+                                arcpy.AddField_management("testTable", "AVERAGE_AQI", "DOUBLE")
+                        
+                                # Copies the table to a new table, just to make sure it is good
+                                arcpy.CreateTable_management(outpath, "testTable2", "testTable")
+                        
+                                # Creates a cursor that is used to find the first row in the new table
+                                editRows = arcpy.da.InsertCursor("testTable2", ("COUNTYFP", "AVERAGE_AQI"))
+                        
+                                # Uses a for loop to fill the empty list 'row' with County Code and Average AQI values and then inserts it into the file using the cursor
+                                for x in rnge:
+                                    row = [ser2[x], ser[x]]
+                                    editRows.insertRow(row)
+                                del editRows
+                        
+                                # Creates a join between the table and the county shapefile based on the common field 'COUNTYFP'
+                                county_joined = arcpy.AddJoin_management(shapefile, "COUNTYFP", "testTable2", "COUNTYFP")
+                                arcpy.CopyFeatures_management(county_joined, "JoinedCounties")
+                        
+                                # Creates the reference to the project that contains the feature layers
+                                project = arcpy.mp.ArcGISProject(r"C:\Users\dylan\Desktop\392Project\392test\392test.aprx")
+                                myMap = project.listMaps('Map')[0]
+                        
+                                # Searches for the new feature layer that was just made based on its name, and then changes the symbology and creates a new output
+                                for layer in myMap.listLayers():
+                                    if layer.isFeatureLayer == True:
+                                        if layer.name.lower() == 'joinedcounties':
+                                            symbology = layer.symbology
+                                            if hasattr(symbology, "renderer") == True:
+                                                symbology.updateRenderer('GraduatedColorsRenderer')
+                                                symbology.renderer.classificationField = "testTable2_AVERAGE_AQI"
+                                                symbology.renderer.breakCount = 5
+                                                symbology.renderer.colorRamp = project.listColorRamps('Blue-Purple (5 classes)')[0]
+                                                layer.symbology = symbology
+                                project.saveACopy(output_project)
+                                return
+                </code></pre>
+            </div>
+            <div class = "code-interaction">
+                <button class="codebutton" onclick="expandCodeBox2()">Expand</button>
+                <button class="codebutton" onclick="downloadCodeSnippet2()">Download</button>
+            </div>
+            <script>
+                    function expandCodeBox2() {
+                        var codeBox = document.querySelector('.code-box2');
+                        if (codeBox.style.maxHeight == 20 + 'vw'){
+                            codeBox.style.maxHeight = codeBox.scrollHeight + 'px';
+                        }
+                        else{
+                            codeBox.style.maxHeight = 20 + "vw";
+                        }
+    
+                    }
+                    
+                    function downloadCodeSnippet2() {
+                      var codeSnippet = document.getElementById('code-snippet2').innerText;
+                      var blob = new Blob([codeSnippet], { type: 'text/plain' });
+                      var url = URL.createObjectURL(blob);
+                      var link = document.createElement('a');
+                      link.href = url;
+                      link.download = 'toolbox.pyt';
+                      link.click();
+                    }
+                    
+            </script>
             <h2 class = "sectionhead">GIS Programming Project: Creation of ArcPy Toolbox to Process and Map Air Quality Data</h2>
             <p id = "intro">TODO</p>
         </div>
-
+                
         <div class = "experience">
             <h2 class = "sectionhead">Geodatabases Project: Processing and Mapping of Human Mobility Data During the COVID-19 Pandemic</h2>
-            <p id = "intro">TODO</p>
+        <p id = "intro">TODO</p>
         </div>
+            
+        
         
     </div>
 </body>
