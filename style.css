@@ -362,7 +362,6 @@ input[type="range"] {
   font-size: 3vw;
   color: #d3d6db;
   cursor: pointer;
-  margin-bottom: 2vw;
 }
 .codebutton:hover{
   background: #d3d6db;
