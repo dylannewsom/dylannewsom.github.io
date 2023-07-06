@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang = "en">
+<head>
+    <base target="_top">
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel = "stylesheet" type = "text/css" href = "style.css"/>
+
+    <title>Academic Work</title>
+
+    <meta http-equiv="Permissions-Policy" content="interest-cohort=()">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" integrity="sha256-kLaT2GOSpHechhsozzB+flnD+zUyjE2LlfWPgU04xyI=" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js" integrity="sha256-WBkoXOwTeyKclOHuWtc+i2uENFpDZ9YPdf5Hf+D7ewM=" crossorigin=""></script>
+	<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+	<link rel="stylesheet" href="https://code.jquery.com/ui/1.13.1/themes/smoothness/jquery-ui.css">
+	<script src="https://code.jquery.com/ui/1.13.1/jquery-ui.min.js"></script>
+	<script src = "https://cdn.jsdelivr.net/npm/chart.js@4.0.1/dist/chart.umd.min.js"></script>
+	<link rel = "stylesheet" type = "text/css" href = "style.css"/>
+
+</head>
+<body>
+    <div class="topbar">
+		<a href = "index.html"><button class = "topbuttons">Home</button></a>
+		<a href = "resume.html"><button class = "topbuttons">Resume</button></a>
+		<a href = "experience.html"><button class = "topbuttons">Experience</button></a>
+		<a href = "personal.html"><button class = "topbuttons">Personal Projects (WIP)</button></a>
+	</div>
+    <div class="header">
+        <h1>Experience</h1>
+    </div>
+    <div class = "content">
+        
+        <p id = "intro">Below I will show you as many relevant examples of my GIS, programming, and data analysis skills in use through class projects and labs. I will 
+            show pictures and videos of my work and working interactive examples where applicable. I will state what 
+            softwares, languages, and  I will start with my newer and bigger stuff, where I feel like I 
+            learned the most and used a wide array of skills, and I will include earlier, more basic stuff further down the page where I find it to be relevant.
+        </p>
+        <div class = "experience">
+            <div id = "wholemap">
+
+                <div id="map">
+                    <div id = "slider">
+                        <input type="range" id="mySlider" min="1950" max="2050" value = "2023" step="1" class = "slider">
+                        <p id = "sliderval">Year: <span id = "sliderValue"></span></p>
+                    </div>
+                </div>
+                <div id = "sidepanel">
+                    <p id = "paneltop">Click buttons to change displayed data.</p>
+                    <button id = "button1" class = "buttons">Total Population</button><br>
+                    <button id = "button2" class = "buttons">Median age of Population</button><br>
+                    <button id = "button3" class = "buttons">Population Change</button><br>
+                    <button id = "button4" class = "buttons">Rate of Population Change</button><br>
+                    <button id = "button5" class = "buttons">Population Density</button><br>
+                    <button id = "button6" class = "buttons">Sex Ratio of the Total Population</button><br>
+                    <button id = "button7" class = "buttons">Total Fertility Rate</button><br>
+                    <button id = "button8" class = "buttons">Life Expectancy at Birth</button><br>
+                    <button id = "button9" class = "buttons">Total Deaths</button><br>
+                    <button id = "button10" class = "buttons">Crude Death Rate</button><br>
+                    <button id = "button11" class = "buttons">Infant Mortality Rate</button><br>
+            
+                </div>
+                <script src="https://storage.googleapis.com/jsonhost/ALL.json"></script>
+                <script src = "leafmap.js">
+                </script>
+            
+            </div>
+
+            <div class="code-box">
+                <pre><code id="code-snippet">const map = L.map('map', {
+                    zoom: 2,
+                    center: [30,0],
+                    minZoom: 2,
+                    maxZoom: 12
+                });
+                var northWest = L.latLng(90, -360),
+                    southEast = L.latLng(-90, 360),
+                    bounds = L.latLngBounds(northWest, southEast);
+                map.setMaxBounds(bounds);
+                const tiles = L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
+                    attribution: '&copy; &lt;a href="https://www.openstreetmap.org/copyright"&gt;OpenStreetMap&lt;/a&gt; contributors',
+                    className: 'map-tiles'
+                }).addTo(map);
+                const info = L.control();
+                info.onAdd = function(map){
+                    this._div = L.DomUtil.create('div', 'info');
+                    this.update();
+                    return this._div;
+                };
+                var currenttime = "2023-01-01T00:00:00Z";
+                var selectedField = "Populati_2";
+                var selectedName  = "Total Population";
+                updateMap(selectedField, selectedName, currenttime);
+                function onEachFeature(feature, layer) {
+                    layer.on({
+                      click: function(e) {
+                        var popupcontent = '&lt;div id="chart-container"&gt;&lt;div id="loading-indicator"&gt;Loading...&lt;/div&gt;&lt;canvas id="chart"&gt;&lt;/canvas&gt;&lt;/div&gt;';
+                        var popup = L.popup({
+                          maxWidth: 600,
+                          minWidth: 500,
+                          maxHeight: 500,
+                          minHeight: 400
+                        }).setContent(popupcontent);
+                        layer.bindPopup(popup).openPopup();
+                      },
+                      mouseover: highlightFeature,
+                      mouseout: function() {
+                        layer.setStyle({
+                          color: "black",
+                          weight: 1,
+                          dashArray: '1',
+                        });
+                        info.update();
+                      }
+                    });
+                  
+                    layer.on('popupopen', function() {
+                      var valarray = [];
+                      var timearray = [];
+                      for (var i = 1950; i &lt;= 2050; i++) {
+                        timearray.push(i);
+                      }
+                      var clicked = String(feature.properties.Location);
+                      console.log(clicked);
+                  
+                      $.getJSON("https://storage.googleapis.com/jsonhost/ALL.json", function(data) {
+                        console.log("Data loaded");
+                        var dataarray = [];
+                        for (var i in data) {
+                          dataarray.push(i, data[i]);
+                          console.log(i);
+                        }
+                        var lastarray = [];
+                        valarray.push(dataarray[3]);
+                        for (var i = 0; i &lt; valarray[0].length; i++) {
+                          if (valarray[0][i]['properties']['Location'] == clicked) {
+                            lastarray.push(valarray[0][i]['properties'][selectedField]);
+                          }
+                          if (lastarray.length == 101) {
+                            break;
+                          }
+                        }
+                        console.log(lastarray);
+                  
+                        console.log("Loading chart");
+                        var chartContainer = document.getElementById('chart-container');
+                          var loadingIndicator = document.getElementById('loading-indicator');
+                          var chartCanvas = document.getElementById('chart');
+                          chartCanvas.style.display = 'none';
+                        var canvas = document.getElementById('chart');
+                        var ctx = canvas.getContext('2d');
+                        var chart = new Chart(ctx, {
+                          type: 'line',
+                          data: {
+                            labels: timearray,
+                            datasets: [{
+                              data: lastarray,
+                              label: clicked + "'s " + selectedName,
+                              borderColor: 'blue',
+                              fill: false,
+                              tension: .1,
+                              pointRadius: 0
+                            }]
+                          },
+                          options: {
+                            scales: {
+                              y: {
+                                title: {
+                                  display: true,
+                                  text: selectedName,
+                                }
+                              },
+                              x: {
+                                title: {
+                                  display: true,
+                                  text: "Year"
+                                }
+                              }
+                            },
+                            title: {
+                              display: true,
+                              text: "Test"
+                            }
+                          }
+                        });
+                        chart.update();
+                        chartCanvas.style.display = 'block';
+                        loadingIndicator.style.display = 'none';
+                        popup.setContent(chartCanvas);
+                      });
+                    });
+                  }
+                  
+                var legend = L.control({position: 'bottomright'});
+                function createLegend(breaks, colors){
+                    if (map.LegendControl){
+                        map.removeControl(map.LegendControl);
+                    }
+                    legend.onAdd = function(map){
+                        var div = L.DomUtil.create('div', 'legend');
+                        for (var i = breaks.length-1; i &gt;= 1; i--){
+                            div.innerHTML += '&lt;div&gt;&lt;i style = "background:' + colors[i] + '"&gt;&lt;/i&gt; &lt;b&gt;' + breaks[i] + ' to ' + breaks[i-1] + '&lt;/b&gt;&lt;br&gt;';
+                        }
+                        if (selectedName == "Population Change"){
+                            div.innerHTML += '&lt;div&gt;&lt;i style = "background:' + colors[0] + '"&gt;&lt;/i&gt; &lt;b&gt;' + breaks[0] + ' to -8,618,685'+ '&lt;/b&gt;&lt;br&gt;';
+                        }
+                        else if (selectedName == "Rate of Population Change"){
+                            div.innerHTML += '&lt;div&gt;&lt;i style = "background:' + colors[0] + '"&gt;&lt;/i&gt; &lt;b&gt;' + breaks[0] + ' to -18.6 '+ '&lt;/b&gt;&lt;br&gt;';
+                        }
+                        else{
+                            div.innerHTML += '&lt;div&gt;&lt;i style = "background:' + colors[0] + '"&gt;&lt;/i&gt; &lt;b&gt;' + breaks[0] + ' to 0 '+ '&lt;/b&gt;&lt;br&gt;';
+                        }
+                        return div;
+                    }
+                    console.log('create legend');
+                    legend.addTo(map);
+                }
+                var BREAKS = [39923245, 164063412, 510992617, 1078970907, 1670490596]
+                createLegend(BREAKS.map(number =&gt; number.toLocaleString()), ['#F0F9E8','#BAE4BC','#7BCCC4','#43A2CA','#0868AC']);
+                function updateMap(field, name, time){
+                    selectedField = field;
+                    selectedName = name;
+                    currenttime = time;
+                    $.getJSON("https://storage.googleapis.com/jsonhost/ALL.json", function (data){
+                        var filtered = L.geoJSON(data,{
+                            filter: myfilter,
+                            onEachFeature: onEachFeature,
+                            style: style
+                        })
+                        filtered.addTo(map);
+                        info.update(data.properties);
+                    })
+                }
+                function myfilter (feature){
+                    if (feature.properties.Time == currenttime){
+                        return true;
+                    }
+                    else{
+                        false;
+                    }
+                }
+                var slider = document.getElementById('mySlider');
+                var output = document.getElementById('sliderValue');
+                var timer = null;
+                output.innerHTML = slider.value;
+                slider.addEventListener('input', function(event){
+                    clearTimeout(timer);
+                    map.dragging.disable();
+                    timer = setTimeout(function(){
+                        var time = String(event.target.value);
+                        time += "-01-01T00:00:00Z";
+                        console.log(time);
+                        updateMap(selectedField, selectedName, time);
+                    }, 500);
+                    map.dragging.enable();
+                })
+                slider.addEventListener('input', function(event){
+                    output.innerHTML = event.target.value;
+                })	
+                info.update = function (props){
+                    var newtime = currenttime.substring(0,4);
+                    if (selectedName == "Total Population"){
+                        const contents = props ? `&lt;b&gt;${props.Location} - ${newtime}&lt;/b&gt;&lt;br /&gt;${props[selectedField].toLocaleString()} People` : 'Hover over a country';
+                        this._div.innerHTML = `&lt;h4&gt;${selectedName}&lt;/h4&gt;${contents}`;
+                    }
+                    else if (selectedName == "Median Age of Population"){
+                        const contents = props ? `&lt;b&gt;${props.Location} - ${newtime}&lt;/b&gt;&lt;br /&gt;${props[selectedField].toFixed(2)} Years` : 'Hover over a country';
+                        this._div.innerHTML = `&lt;h4&gt;${selectedName}&lt;/h4&gt;${contents}`;
+                    }
+                    else if (selectedName == "Population Change"){
+                        const contents = props ? `&lt;b&gt;${props.Location} - ${newtime}&lt;/b&gt;&lt;br /&gt;${props[selectedField].toLocaleString()} People / yr` : 'Hover over a country';
+                        this._div.innerHTML = `&lt;h4&gt;${selectedName}&lt;/h4&gt;${contents}`;
+                    }
+                    else if (selectedName == "Rate of Population Change"){
+                        const contents = props ? `&lt;b&gt;${props.Location} - ${newtime}&lt;/b&gt;&lt;br /&gt;${props[selectedField].toFixed(2)}% / yr` : 'Hover over a country';
+                        this._div.innerHTML = `&lt;h4&gt;${selectedName}&lt;/h4&gt;${contents}`;
+                    }
+                    else if (selectedName == "Population Density"){
+                        const contents = props ? `&lt;b&gt;${props.Location} - ${newtime}&lt;/b&gt;&lt;br /&gt;${props[selectedField].toFixed(2)} People / sq. km` : 'Hover over a country';
+                        this._div.innerHTML = `&lt;h4&gt;${selectedName}&lt;/h4&gt;${contents}`;
+                    }
+                    else if (selectedName == "Sex Ratio of the Population"){
+                        const contents = props ? `&lt;b&gt;${props.Location} - ${newtime}&lt;/b&gt;&lt;br /&gt;${props[selectedField].toFixed(2)} Male/Female Ratio` : 'Hover over a country';
+                        this._div.innerHTML = `&lt;h4&gt;${selectedName}&lt;/h4&gt;${contents}`;
+                    }
+                    else if (selectedName == "Total Fertility Rate"){
+                        const contents = props ? `&lt;b&gt;${props.Location} - ${newtime}&lt;/b&gt;&lt;br /&gt;${props[selectedField].toLocaleString()} Children per Woman` : 'Hover over a country';
+                        this._div.innerHTML = `&lt;h4&gt;${selectedName}&lt;/h4&gt;${contents}`;
+                    }
+                    else if (selectedName == "Life Expectancy at Birth"){
+                        const contents = props ? `&lt;b&gt;${props.Location} - ${newtime}&lt;/b&gt;&lt;br /&gt;${props[selectedField].toLocaleString()} Years` : 'Hover over a country';
+                        this._div.innerHTML = `&lt;h4&gt;${selectedName}&lt;/h4&gt;${contents}`;
+                    }
+                    else if (selectedName == "Total Deaths"){
+                        const contents = props ? `&lt;b&gt;${props.Location} - ${newtime}&lt;/b&gt;&lt;br /&gt;${props[selectedField].toLocaleString()} People / yr` : 'Hover over a country';
+                        this._div.innerHTML = `&lt;h4&gt;${selectedName}&lt;/h4&gt;${contents}`;
+                    }
+                    else if (selectedName == "Crude Death Rate"){
+                        const contents = props ? `&lt;b&gt;${props.Location} - ${newtime}&lt;/b&gt;&lt;br /&gt;${props[selectedField].toLocaleString()} / 1000 People` : 'Hover over a country';
+                        this._div.innerHTML = `&lt;h4&gt;${selectedName}&lt;/h4&gt;${contents}`;
+                    }
+                    else if (selectedName == "Infant Mortality Rate"){
+                        const contents = props ? `&lt;b&gt;${props.Location} - ${newtime}&lt;/b&gt;&lt;br /&gt;${props[selectedField].toLocaleString()} / 1000 People` : 'Hover over a country';
+                        this._div.innerHTML = `&lt;h4&gt;${selectedName}&lt;/h4&gt;${contents}`;
+                    }
+                }
+                info.addTo(map);
+                document.getElementById("button1").addEventListener("click", function() {
+                    updateMap("Populati_2", "Total Population", currenttime);
+                    var BREAKS = [39923245, 164063412, 510992617, 1078970907, 1670490596]
+                    createLegend(BREAKS.map(number =&gt; number.toLocaleString()), ['#F0F9E8','#BAE4BC','#7BCCC4','#43A2CA','#0868AC']);
+                });
+                document.getElementById("button2").addEventListener("click", function() {
+                    updateMap("Median_Pop", "Median Age of Population", currenttime);
+                    var BREAKS = [22, 30, 40, 45, 56.68]
+                    createLegend(BREAKS.map(number =&gt; number.toLocaleString()), ['#FEF0D9','#FDCC8A','#FC8D59','#E34A33','#B30000']);
+                });
+                document.getElementById("button3").addEventListener("click", function() {
+                    updateMap("Population", "Population Change", currenttime);
+                    var BREAKS = [0, 7000, 63000, 280000, 22289974]
+                    createLegend(BREAKS.map(number =&gt; number.toLocaleString()), ['#b2182b','#f7f7f7','#d1e5f0','#67a9cf','#2166ac']);
+                });
+                document.getElementById("button4").addEventListener("click", function() {
+                    updateMap("Rate_of_po", "Rate of Population Change", currenttime);
+                    var BREAKS = [0, 1.00, 1.75, 2.50, 36.299]
+                    createLegend(BREAKS.map(number =&gt; number.toFixed(2)), ['#fee08b','#ffffbf','#d9ef8b','#91cf60','#1a9850']);
+                });
+                document.getElementById("button5").addEventListener("click", function() {
+                    updateMap("Populati_1", "Population Density", currenttime);
+                    var BREAKS = [17.986935, 51.263107, 100.034168, 225.804202, 25278.18792]
+                    createLegend(BREAKS.map(number =&gt; number.toFixed(2)), ['#edf8fb','#b3cde3','#8c96c6','#8856a7','#810f7c']);
+                });
+                document.getElementById("button6").addEventListener("click", function() {
+                    updateMap("Sex_Ratio", "Sex Ratio of the Population", currenttime);
+                    var BREAKS = [94.357655, 97.556323, 100, 102.484845, 327.456193]
+                    createLegend(BREAKS.map(number =&gt; number.toFixed(2)), ['#E600A9','#FF73DF','#9EAAD7','#73B2FF','#0070FF']);
+                });
+                document.getElementById("button7").addEventListener("click", function() {
+                    updateMap("TFR", "Total Fertility Rate", currenttime);
+                    var BREAKS = [1.696023, 2.286274, 3.39118, 5.743395, 8.863675]
+                    createLegend(BREAKS.map(number =&gt; number.toFixed(2)), ['#af8dc3','#e7d4e8','#d9f0d3','#7fbf7b','#1b7837']);
+                });
+                document.getElementById("button8").addEventListener("click", function() {
+                    updateMap("Life_Expec", "Life Expectancy at Birth", currenttime);
+                    var BREAKS = [57.2786, 66.7681, 72.3845, 80, 90.1865]
+                    createLegend(BREAKS.map(number =&gt; number.toFixed(2)), ['#A63603','#E6550D','#FD8D3C','#FDBE85','#FEEDDE']);
+                });
+                document.getElementById("button9").addEventListener("click", function() {
+                    updateMap("Total_Deat", "Total Deaths", currenttime);
+                    var BREAKS = [231977, 803693, 1854612, 4113154, 19613435]
+                    createLegend(BREAKS.map(number =&gt; number.toLocaleString()), ['#FFFFB2','#FECC5C','#FD8D3C','#F03B20','#BD0026']);
+                });
+                document.getElementById("button10").addEventListener("click", function() {
+                    updateMap("Death_Rate", "Crude Death Rate", currenttime);
+                    var BREAKS = [6.543, 8.274, 10.193, 13.524, 103.534]
+                    createLegend(BREAKS.map(number =&gt; number.toFixed(2)), ['#FEEBE2','#FBB4B9','#F768A1','#C51B8A','#7A0177']);
+                });
+                document.getElementById("button11").addEventListener("click", function() {
+                    updateMap("IMR", "Infant Mortality Rate", currenttime);
+                    var BREAKS = [6.65706, 15.7782, 34.67227, 79.15877, 400.64341]
+                    createLegend(BREAKS.map(number =&gt; number.toFixed(2)), ['#F5F500','#F5B800','#F57A00','#F53D00','#F50000']);
+                });
+                function getColor(feature, f, time){
+                    //DONE
+                    if (selectedName == "Total Population"){
+                        var BREAKS = [39923245, 164063412, 510992617, 1078970907, 1670490596]
+                        return ((f &lt; BREAKS[0])) ? '#F0F9E8' :
+                               ((f &lt; BREAKS[1])) ? '#BAE4BC' :
+                               ((f &lt; BREAKS[2])) ? '#7BCCC4' :
+                               ((f &lt; BREAKS[3])) ? '#43A2CA' :
+                               ((f &lt; BREAKS[4])) ? '#0868AC' :
+                                           'white'; 
+                    }
+                    //DONE
+                    else if (selectedName == "Median Age of Population"){
+                        var BREAKS = [22, 30, 40, 45, 56.68]
+                        return ((f &lt; BREAKS[0])) ? '#FEF0D9' :
+                               ((f &lt; BREAKS[1])) ? '#FDCC8A' :
+                               ((f &lt; BREAKS[2])) ? '#FC8D59' :
+                               ((f &lt; BREAKS[3])) ? '#E34A33' :
+                               ((f &lt; BREAKS[4])) ? '#B30000' :
+                                           'white'; 
+                    }
+                    //Done
+                    else if (selectedName == "Population Change"){
+                        var BREAKS = [0, 7000, 63000, 280000, 22289974]
+                        return ((f &lt; BREAKS[0])) ? '#b2182b' :
+                               ((f &lt; BREAKS[1])) ? '#f7f7f7' :
+                               ((f &lt; BREAKS[2])) ? '#d1e5f0' :
+                               ((f &lt; BREAKS[3])) ? '#67a9cf' :
+                               ((f &lt; BREAKS[4])) ? '#2166ac' :
+                                           'white'; 
+                    }
+                    //Done
+                    else if (selectedName == "Rate of Population Change"){
+                        var BREAKS = [0, 1.00, 1.75, 2.50, 36.299]
+                        return ((f &lt; BREAKS[0])) ? '#fee08b' :
+                               ((f &lt; BREAKS[1])) ? '#ffffbf' :
+                               ((f &lt; BREAKS[2])) ? '#d9ef8b' :
+                               ((f &lt; BREAKS[3])) ? '#91cf60' :
+                               ((f &lt; BREAKS[4])) ? '#1a9850' :
+                                           'white'; 
+                    }
+                    //Done
+                    else if (selectedName == "Population Density"){
+                        var BREAKS = [17.986935, 51.263107, 100.034168, 225.804202, 25278.18792]
+                        return ((f &lt; BREAKS[0])) ? '#edf8fb' :
+                               ((f &lt; BREAKS[1])) ? '#b3cde3' :
+                               ((f &lt; BREAKS[2])) ? '#8c96c6' :
+                               ((f &lt; BREAKS[3])) ? '#8856a7' :
+                               ((f &lt; BREAKS[4])) ? '#810f7c' :
+                                           'white'; 
+                    }
+                    //Done
+                    else if (selectedName == "Sex Ratio of the Population"){
+                        var BREAKS = [94.357655, 97.556323, 100, 102.484845, 327.456193]
+                        return ((f &lt; BREAKS[0])) ? '#E600A9' :
+                               ((f &lt; BREAKS[1])) ? '#FF73DF' :
+                               ((f &lt; BREAKS[2])) ? '#9EAAD7' :
+                               ((f &lt; BREAKS[3])) ? '#73B2FF' :
+                               ((f &lt; BREAKS[4])) ? '#0070FF' :
+                                           'white'; 
+                    }
+                    //Done
+                    if (selectedName == "Total Fertility Rate"){
+                        var BREAKS = [1.696023, 2.286274, 3.39118, 5.743395, 8.863675]
+                        return ((f &lt; BREAKS[0])) ? '#af8dc3' :
+                               ((f &lt; BREAKS[1])) ? '#e7d4e8' :
+                               ((f &lt; BREAKS[2])) ? '#d9f0d3' :
+                               ((f &lt; BREAKS[3])) ? '#7fbf7b' :
+                               ((f &lt; BREAKS[4])) ? '#1b7837' :
+                                           'white'; 
+                    }
+                    //Done
+                    else if (selectedName == "Life Expectancy at Birth"){
+                        var BREAKS = [57.2786, 66.7681, 72.3845, 80, 90.1865]
+                        return ((f &lt; BREAKS[0])) ? '#A63603' :
+                               ((f &lt; BREAKS[1])) ? '#E6550D' :
+                               ((f &lt; BREAKS[2])) ? '#FD8D3C' :
+                               ((f &lt; BREAKS[3])) ? '#FDBE85' :
+                               ((f &lt; BREAKS[4])) ? '#FEEDDE' :
+                                           'white'; 
+                    }
+                    //Done
+                    else if (selectedName == "Total Deaths"){
+                        var BREAKS = [231977, 803693, 1854612, 4113154, 19613435]
+                        return ((f &lt; BREAKS[0])) ? '#FFFFB2' :
+                               ((f &lt; BREAKS[1])) ? '#FECC5C' :
+                               ((f &lt; BREAKS[2])) ? '#FD8D3C' :
+                               ((f &lt; BREAKS[3])) ? '#F03B20' :
+                               ((f &lt; BREAKS[4])) ? '#BD0026' :
+                                           'white'; 
+                    }
+                    //Done
+                    else if (selectedName == "Crude Death Rate"){
+                        var BREAKS = [6.543, 8.274, 10.193, 13.524, 103.534]
+                        return ((f &lt; BREAKS[0])) ? '#FEEBE2' :
+                               ((f &lt; BREAKS[1])) ? '#FBB4B9' :
+                               ((f &lt; BREAKS[2])) ? '#F768A1' :
+                               ((f &lt; BREAKS[3])) ? '#C51B8A' :
+                               ((f &lt; BREAKS[4])) ? '#7A0177' :
+                                           'white'; 
+                    }
+                    //Done
+                    else if (selectedName == "Infant Mortality Rate"){
+                        var BREAKS = [6.65706, 15.7782, 34.67227, 79.15877, 400.64341]
+                        return ((f &lt; BREAKS[0])) ? '#F5F500' :
+                               ((f &lt; BREAKS[1])) ? '#F5B800' :
+                               ((f &lt; BREAKS[2])) ? '#F57A00' :
+                               ((f &lt; BREAKS[3])) ? '#F53D00' :
+                               ((f &lt; BREAKS[4])) ? '#F50000' :
+                                           'white'; 
+                    }
+                    
+                }
+                function style(feature, layer){
+                    return {
+                        weight: 1,
+                        opacity: 1,
+                        color: 'black',
+                        dashArray: '1',
+                        fillOpacity: 1,
+                        fillColor: getColor(feature, feature.properties[selectedField], feature.properties.Time)
+                    };
+                }
+                function highlightFeature(e){
+                    const layer = e.target;
+                    layer.setStyle({
+                        weight: 5,
+                        opacity: 1,
+                        color: 'black',
+                        dashArray: '',
+                        fillOpacity: 1
+                    });
+                    layer.bringToFront();
+                    info.update(layer.feature.properties);
+                }</code></pre>
+            </div>
+
+            <div class = "code-interaction">
+                <button class="codebutton" onclick="expandCodeBox()">Expand</button>
+                <button class="codebutton" onclick="downloadCodeSnippet()">Download</button>
+            </div>
+
+            <script>
+                function expandCodeBox() {
+                    var codeBox = document.querySelector('.code-box');
+                    if (codeBox.style.maxHeight == 20 + 'vw'){
+                        codeBox.style.maxHeight = codeBox.scrollHeight + 'px';
+                    }
+                    else{
+                        codeBox.style.maxHeight = 20 + "vw";
+                    }
+
+                }
+                
+                function downloadCodeSnippet() {
+                  var codeSnippet = document.getElementById('code-snippet').innerText;
+                  var blob = new Blob([codeSnippet], { type: 'text/plain' });
+                  var url = URL.createObjectURL(blob);
+                  var link = document.createElement('a');
+                  link.href = url;
+                  link.download = 'code-snippet.txt';
+                  link.click();
+                }
+                
+            </script>
+              
+
+            <h2 class = "sectionhead">WebGIS Final Class Project: Interactive Leaflet Map</h2>
+            <p id = "intro">The above webmap is what I chose to do for my final project in my WebGIS class. The labs in this class covered basic CSS, HTML, JavaScript,
+                ArcGIS Online, and Leaflet and Mapbox JavaScript APIs. The professor allowed for us to choose what we wanted to do, mainly simple one layer maps made in
+                ArcGIS Online, story maps, basic leaflet maps, etc.. But, I didn't think that doing something that basic would truly allow me to learn more about 
+                WebGIS, and so I wanted to try to create something I would actually find interesting, complex, and beneficial.I wanted to create an interactive map using leaflet that allowed
+                for the user to select which layer/variable they wanted displayed, and I wanted to implement a temporal scale to the data, as well as the ability to graph 
+                the data for a selected feature for the variable/layer selected. I wanted this to be implemented in a quick and easily navigated interface. A large dataset
+                that has a large spatial AND temporal scale is U.N's demographic data. I took 11 variables and then joined them with a world countries shapefile obtained from the
+                world bank. I then simplified the geometry to save space using mapshaper.org and converted it to a geojson file. I used this in the above map
+                and utilized leaflet functions and JavaScript to create a way for the map's symbology to change when a different variable is selected and when the time slider
+                is used. The information box in the top right shows the updated information for each country, and when a country is clicked on, all the years for the selected
+                data is shown on a graph for that country. 
+            </p>
+        </div>
+        
+        <div class = "experience">
+            <h2 class = "sectionhead">GIS Practicum: Water and Human Resources Sustainability Analysis</h2>
+            <p id = "intro">TODO</p>
+        </div>
+
+        <div class = "experience">
+            <h2 class = "sectionhead">GIS Programming Project: Creation of ArcPy Toolbox to Process and Map Air Quality Data</h2>
+            <p id = "intro">TODO</p>
+        </div>
+
+        <div class = "experience">
+            <h2 class = "sectionhead">Geodatabases Project: Processing and Mapping of Human Mobility Data During the COVID-19 Pandemic</h2>
+            <p id = "intro">TODO</p>
+        </div>
+        
+    </div>
+</body>
+</html>
